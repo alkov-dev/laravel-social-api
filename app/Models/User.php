@@ -148,7 +148,6 @@ class User extends Authenticatable
         ];
     }
 
-    // Связи
     public function posts()
     {
         return $this->hasMany(Post::class);

@@ -24,8 +24,8 @@ class PostSeeder extends Seeder
                 'published_at' => now()->subDays(1),
                 'images' => [
                     [
-                        'preview' => 'https://picsum.photos/seed/fitness1/400/300',
-                        'full' => 'https://picsum.photos/seed/fitness1/1200/900',
+                        'preview' => 'https://avatars.mds.yandex.net/i?id=526b7201a96cecc969aada855112fcf90d38b5db-7017675-images-thumbs&n=13',
+                        'full' => 'https://avatars.mds.yandex.net/i?id=526b7201a96cecc969aada855112fcf90d38b5db-7017675-images-thumbs&n=13',
                         'alt' => 'Упражнения для пресса',
                     ],
                 ],
@@ -38,13 +38,13 @@ class PostSeeder extends Seeder
                 'published_at' => now()->subDays(3),
                 'images' => [
                     [
-                        'preview' => 'https://picsum.photos/seed/japan1/400/300',
-                        'full' => 'https://picsum.photos/seed/japan1/1200/900',
+                        'preview' => 'https://avatars.mds.yandex.net/i?id=5636e031fa49e98ed312ab9d8f5cab0f7af3f021-5232025-images-thumbs&n=13',
+                        'full' => 'https://avatars.mds.yandex.net/i?id=5636e031fa49e98ed312ab9d8f5cab0f7af3f021-5232025-images-thumbs&n=13',
                         'alt' => 'Сакура в Токио',
                     ],
                     [
-                        'preview' => 'https://picsum.photos/seed/japan2/400/300',
-                        'full' => 'https://picsum.photos/seed/japan2/1200/900',
+                        'preview' => 'https://avatars.mds.yandex.net/i?id=5636e031fa49e98ed312ab9d8f5cab0f7af3f021-5232025-images-thumbs&n=13',
+                        'full' => 'https://avatars.mds.yandex.net/i?id=5636e031fa49e98ed312ab9d8f5cab0f7af3f021-5232025-images-thumbs&n=13',
                         'alt' => 'Храм в Киото',
                     ],
                 ],
@@ -57,8 +57,8 @@ class PostSeeder extends Seeder
                 'published_at' => now()->subDays(5),
                 'images' => [
                     [
-                        'preview' => 'https://picsum.photos/seed/pasta1/400/300',
-                        'full' => 'https://picsum.photos/seed/pasta1/1200/900',
+                        'preview' => 'https://i.pinimg.com/736x/b7/ae/97/b7ae9781175cff82575efc1017fa4dec.jpg',
+                        'full' => 'https://i.pinimg.com/736x/b7/ae/97/b7ae9781175cff82575efc1017fa4dec.jpg',
                         'alt' => 'Паста карбонара',
                     ],
                 ],
@@ -71,8 +71,8 @@ class PostSeeder extends Seeder
                 'published_at' => now()->subDays(7),
                 'images' => [
                     [
-                        'preview' => 'https://picsum.photos/seed/macbook1/400/300',
-                        'full' => 'https://picsum.photos/seed/macbook1/1200/900',
+                        'preview' => 'https://i.pinimg.com/736x/a2/31/43/a231439d3011607ac6e67a29424c9ae0.jpg',
+                        'full' => 'https://i.pinimg.com/736x/a2/31/43/a231439d3011607ac6e67a29424c9ae0.jpg',
                         'alt' => 'MacBook Pro M3',
                     ],
                 ],
@@ -85,13 +85,13 @@ class PostSeeder extends Seeder
                 'published_at' => now()->subHours(12),
                 'images' => [
                     [
-                        'preview' => 'https://picsum.photos/seed/concert1/400/300',
-                        'full' => 'https://picsum.photos/seed/concert1/1200/900',
+                        'preview' => 'https://images.wallpaperscraft.com/image/single/night_city_street_skyscrapers_133350_2560x1080.jpg',
+                        'full' => 'https://images.wallpaperscraft.com/image/single/night_city_street_skyscrapers_133350_2560x1080.jpg',
                         'alt' => 'Coldplay на сцене',
                     ],
                     [
-                        'preview' => 'https://picsum.photos/seed/concert2/400/300',
-                        'full' => 'https://picsum.photos/seed/concert2/1200/900',
+                        'preview' => 'https://i.pinimg.com/736x/a2/31/43/a231439d3011607ac6e67a29424c9ae0.jpg',
+                        'full' => 'https://i.pinimg.com/736x/a2/31/43/a231439d3011607ac6e67a29424c9ae0.jpg',
                         'alt' => 'Зрители на концерте',
                     ],
                 ],

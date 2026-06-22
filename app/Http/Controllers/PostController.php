@@ -1,96 +1,172 @@
 <?php
 
 namespace App\Http\Controllers;
-use Illuminate\View\View;
-use Illuminate\Http\RedirectResponse;
+
+use App\Http\Controllers\Controller;
+use App\Http\Requests\StorePostRequest;
+use Illuminate\Support\Facades\Storage;
+use App\Http\Resources\PostResource;
 use App\Models\Post;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 
 class PostController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Лента постов с фильтрацией
      */
-    public function index(): View
+    public function index(Request $request): JsonResponse
     {
-        $posts = Post::latest()->paginate(5);
+        $query = Post::with(['user', 'category', 'firstImage'])
+            ->where('is_published', true);
 
-        return view('admin.posts.index', compact('posts'));
+        // Фильтр по категории
+        if ($request->filled('category_id')) {
+            $query->where('category_id', $request->category_id);
+        }
+
+        // Фильтр по дате (от)
+        if ($request->filled('date_from')) {
+            $query->where('published_at', '>=', $request->date_from);
+        }
+
+        // Фильтр по дате (до)
+        if ($request->filled('date_to')) {
+            $query->where('published_at', '<=', $request->date_to);
+        }
+
+        // Сортировка
+        $sortBy = $request->get('sort_by', 'published_at');
+        $sortOrder = $request->get('sort_order', 'desc');
+
+        $allowedSorts = ['published_at', 'created_at', 'likes_count', 'comments_count'];
+        if (in_array($sortBy, $allowedSorts)) {
+            $query->orderBy($sortBy, $sortOrder);
+        }
+
+        $posts = $query->paginate($request->get('per_page', 10));
+
+        return response()->json([
+            'success' => true,
+            'data' => PostResource::collection($posts),
+            'meta' => [
+                'current_page' => $posts->currentPage(),
+                'last_page' => $posts->lastPage(),
+                'per_page' => $posts->perPage(),
+                'total' => $posts->total(),
+            ],
+        ]);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create(): View
+    public function show(Post $post): JsonResponse
     {
-        return view('admin.posts.create');
+        $post->load(['user', 'category', 'images']);
+
+        return response()->json([
+            'success' => true,
+            'data' => new PostResource($post),
+        ]);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request): RedirectResponse
+    public function store(StorePostRequest $request): JsonResponse
     {
-        $data = $request->validate([
-            'title' => 'required|min:3',
-            'slug' => 'nullable',
-            'excerpt' => 'required|min:10',
-            'body' => 'required|min:10',
-            'is_published' => 'nullable',
-            'published_at' => 'nullable',
-            'user_id' => 'nullable',
+        $post = Post::create([
+            'title' => $request->title,
+            'content' => $request->content,
+            'user_id' => $request->user()->id,
+            'category_id' => $request->category_id,
+            'published_at' => now(),
+            'is_published' => true,
         ]);
 
-        Post::create($data);
+        // Обработка картинок
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $index => $file) {
+                // Сохраняем на диске 'public'
+                $previewPath = $file->store('posts/previews', 'public');
+                $fullPath = $file->store('posts/full', 'public');
 
-        return redirect()->route('posts.index')->with('success', 'Post created successfully.');
+                $post->images()->create([
+                    // ✅ Полный URL через asset()
+                    'preview_url' => asset(Storage::url($previewPath)),
+                    'full_url' => asset(Storage::url($fullPath)),
+                    'alt_text' => $request->input("alt_texts.{$index}"),
+                    'order' => $index,
+                ]);
+            }
+        }
+
+        $post->load(['user', 'category', 'images']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Пост успешно создан',
+            'data' => new PostResource($post),
+        ], 201);
     }
 
     /**
-     * Display the specified resource.
+     * Обновление поста
      */
-    public function show(Post $post): View
+    public function update(StorePostRequest $request, Post $post): JsonResponse
     {
-        return view('admin.posts.show', compact('post'));
-    }
+        if ($post->user_id !== $request->user()->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Нет доступа',
+            ], 403);
+        }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Post $post)
-    {
-        return view('admin.posts.edit', compact('post'));
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, Post $post): RedirectResponse
-    {
-        $data = $request->validate([
-            'title' => 'required|min:3',
-            'slug' => 'nullable',
-            'excerpt' => 'required|min:10',
-            'body' => 'required|min:10',
-            'is_published' => 'nullable',
-            'published_at' => 'nullable',
-            'user_id' => 'nullable',
+        $post->update([
+            'title' => $request->title,
+            'content' => $request->content,
+            'category_id' => $request->category_id,
         ]);
 
-        $post->update($data);
+        $post->load(['user', 'category', 'images']);
 
-        return redirect()->route('posts.index')->with('success', 'Post updated successfully.');
+        return response()->json([
+            'success' => true,
+            'message' => 'Пост обновлён',
+            'data' => new PostResource($post),
+        ]);
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Удаление поста
      */
-    public function destroy(Post $post): RedirectResponse
+    public function destroy(Request $request, Post $post): JsonResponse
     {
+    // Проверяем, что пользователь — автор поста
+        if ($post->user_id !== $request->user()->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'У вас нет прав на удаление этого поста',
+            ], 403);
+        }
+
+        // Удаляем связанные изображения
+        foreach ($post->images as $image) {
+            // Удаляем файлы с диска
+            $previewPath = str_replace(asset('storage/') , '', $image->preview_url);
+            $fullPath = str_replace(asset('storage/') , '', $image->full_url);
+
+            Storage::disk('public')->delete($previewPath);
+            Storage::disk('public')->delete($fullPath);
+        }
+
+        $post->images()->delete();
+
+        // Удаляем лайки и комментарии
+        $post->likes()->delete();
+        $post->comments()->delete();
+
+        // Удаляем пост
         $post->delete();
 
-        return redirect()->route('posts.index')->with('success', 'Post deleted successfully.');
-        //
+        return response()->json([
+            'success' => true,
+            'message' => 'Пост успешно удалён',
+        ]);
     }
 }

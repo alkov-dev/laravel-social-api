@@ -36,15 +36,15 @@ class PostController extends Controller
         }
 
         // Сортировка
-        $sortBy = $request->get('sort_by', 'published_at');
-        $sortOrder = $request->get('sort_order', 'desc');
+        $sortBy = $request->input('sort_by', 'published_at');
+        $sortOrder = $request->input('sort_order', 'desc');
 
         $allowedSorts = ['published_at', 'created_at', 'likes_count', 'comments_count'];
         if (in_array($sortBy, $allowedSorts)) {
             $query->orderBy($sortBy, $sortOrder);
         }
 
-        $posts = $query->paginate($request->get('per_page', 10));
+        $posts = $query->paginate($request->input('per_page', 10));
 
         return response()->json([
             'success' => true,

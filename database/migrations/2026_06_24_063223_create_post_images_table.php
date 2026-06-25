@@ -11,15 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('likes', function (Blueprint $table) {
+        Schema::create('post_images', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->foreignId('post_id')->constrained()->cascadeOnDelete();
+            $table->string('preview_url');
+            $table->string('full_url');
+            $table->string('alt_text')->nullable();
+            $table->integer('order')->default(0);
             $table->timestamps();
-
-            // Один пользователь может лайкнуть пост только один раз
-            $table->unique(['user_id', 'post_id']);
-            $table->index('post_id');
         });
     }
 
@@ -28,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('likes');
+        Schema::dropIfExists('post_images');
     }
 };

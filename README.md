@@ -1,4 +1,5 @@
 ```php
+
 ┌──────────────┐       ┌──────────────┐       ┌──────────────┐
 │    users     │       │  categories  │       │   posts      │
 ├──────────────┤       ├──────────────┤       ├──────────────┤
@@ -14,7 +15,7 @@
        │                                            │
        │            ┌──────────────────┐            │
        │            │  post_images     │            │
-       │            ├──────────────────            │
+       │            ├──────────────────|            │
        │            │ id (PK)          │            │
        │            │ post_id (FK)     │            │
        │            │ preview_url      │            │
@@ -25,24 +26,65 @@
        │                                            │
        │         ┌──────────────────┐               │
        │         │      likes       │               │
-       │         ├──────────────────               │
+       │         ├──────────────────|               │
        │         │ id (PK)          │               │
        │         │ user_id (FK)     │               │
        │         │ post_id (FK)     │───────────────┘
        │         │ created_at       │
        │         └──────────────────┘
        │
-       │         ──────────────────┐
+       │          ──────────────────┐
        │         │    comments      │
        │         ├──────────────────┤
        │         │ id (PK)          │
        │         │ user_id (FK)     │
        │         │ post_id (FK)     │
-       │         │ parent_id (FK)   │ ← для ответов
+       │         │ parent_id (FK)   │ 
        │         │ content          │
        │         │ created_at       │
        │         │ updated_at       │
        │         └──────────────────┘
+
+Натройка bootstrap.php
+-----------------------
+
+<?php
+
+use Illuminate\Foundation\Application;
+use Illuminate\Foundation\Configuration\Exceptions;
+use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
+
+
+
+return Application::configure(basePath: dirname(__DIR__))
+    ->withRouting(
+        web: __DIR__.'/../routes/web.php',
+        api: __DIR__.'/../routes/api.php',
+        commands: __DIR__.'/../routes/console.php',
+        channels: __DIR__.'/../routes/channels.php',
+        health: '/up',
+    )
+    ->withMiddleware(function (Middleware $middleware): void {
+        // ✅ Настраиваем CORS
+        $middleware->api(prepend: [
+            \Illuminate\Http\Middleware\HandleCors::class,
+        ]);
+
+        // ✅ Отключаем CSRF для API 
+        $middleware->preventRequestForgery(except: [
+            'api/*',
+        ]);
+
+        // ✅ Sanctum для работы с SPA
+        $middleware->statefulApi();
+    })
+    ->withExceptions(function (Exceptions $exceptions): void {
+        $exceptions->shouldRenderJsonWhen(
+            fn (Request $request) => $request->is('api/*'),
+        );
+    })->create();
+
 
 -----------------------
 create_categories_table
@@ -62,8 +104,8 @@ return new class extends Migration
             $table->string('name');
             $table->string('slug')->unique();
             $table->text('description')->nullable();
-            $table->string('color', 7)->default('#3B82F6'); // HEX цвет
-            $table->string('icon')->nullable(); // иконка (emoji или SVG)
+            $table->string('color', 7)->default('#3B82F6');
+            $table->string('icon')->nullable();
             $table->timestamps();
         });
     }
@@ -73,6 +115,7 @@ return new class extends Migration
         Schema::dropIfExists('categories');
     }
 };
+
 -----------------------
 update_users_table 
 
@@ -113,6 +156,9 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Run the migrations.
+     */
     public function up(): void
     {
         Schema::create('posts', function (Blueprint $table) {
@@ -134,11 +180,15 @@ return new class extends Migration
         });
     }
 
+    /**
+     * Reverse the migrations.
+     */
     public function down(): void
     {
         Schema::dropIfExists('posts');
     }
 };
+
 -----------------------
 create_post_images_table
 <?php
@@ -149,24 +199,31 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Run the migrations.
+     */
     public function up(): void
     {
         Schema::create('post_images', function (Blueprint $table) {
             $table->id();
             $table->foreignId('post_id')->constrained()->cascadeOnDelete();
-            $table->string('preview_url');  // превью (thumbnail)
-            $table->string('full_url');     // полный размер
+            $table->string('preview_url');  
+            $table->string('full_url');     
             $table->string('alt_text')->nullable();
             $table->integer('order')->default(0);
             $table->timestamps();
         });
     }
 
+    /**
+     * Reverse the migrations.
+     */
     public function down(): void
     {
         Schema::dropIfExists('post_images');
     }
 };
+
 -----------------------
 create_likes_table
 
@@ -178,6 +235,9 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Run the migrations.
+     */
     public function up(): void
     {
         Schema::create('likes', function (Blueprint $table) {
@@ -192,11 +252,15 @@ return new class extends Migration
         });
     }
 
+    /**
+     * Reverse the migrations.
+     */
     public function down(): void
     {
         Schema::dropIfExists('likes');
     }
 };
+
 -----------------------
 create_comments_table
 
@@ -208,6 +272,9 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Run the migrations.
+     */
     public function up(): void
     {
         Schema::create('comments', function (Blueprint $table) {
@@ -227,11 +294,15 @@ return new class extends Migration
         });
     }
 
+    /**
+     * Reverse the migrations.
+     */
     public function down(): void
     {
         Schema::dropIfExists('comments');
     }
 };
+
 
 -----------------------
 create_subscriptions_table (для WebSocket)
@@ -244,6 +315,9 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Run the migrations.
+     */
     public function up(): void
     {
         Schema::create('post_subscriptions', function (Blueprint $table) {
@@ -256,11 +330,15 @@ return new class extends Migration
         });
     }
 
+    /**
+     * Reverse the migrations.
+     */
     public function down(): void
     {
         Schema::dropIfExists('post_subscriptions');
     }
 };
+
 -----------------------
 Модели и связи
 User.php
@@ -269,19 +347,153 @@ User.php
 
 namespace App\Models;
 
+// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use OpenApi\Attributes as OA;
+
+
+#[OA\Schema(
+    schema: "User",
+    required: ["id", "name", "email"],
+    properties: [
+        new OA\Property(
+            property: "id",
+            type: "integer",
+            description: "Уникальный идентификатор пользователя",
+            example: 1,
+            readOnly: true
+        ),
+        new OA\Property(
+            property: "name",
+            type: "string",
+            description: "Имя пользователя",
+            minLength: 2,
+            maxLength: 255,
+            example: "Иван Иванов"
+        ),
+        new OA\Property(
+            property: "email",
+            type: "string",
+            format: "email",
+            description: "Email для входа",
+            example: "ivan@example.com"
+        ),
+        new OA\Property(
+            property: "avatar",
+            type: "string",
+            format: "uri",
+            nullable: true,
+            description: "URL аватарки пользователя",
+            example: "https://api.dicebear.com/7.x/avataaars/svg?seed=Ivan"
+        ),
+        new OA\Property(
+            property: "bio",
+            type: "string",
+            nullable: true,
+            description: "О себе",
+            maxLength: 500,
+            example: "Фитнес-тренер, люблю спорт"
+        ),
+        new OA\Property(
+            property: "phone",
+            type: "string",
+            nullable: true,
+            description: "Номер телефона",
+            example: "+79991234567"
+        ),
+        new OA\Property(
+            property: "birth_date",
+            type: "string",
+            format: "date",
+            nullable: true,
+            description: "Дата рождения",
+            example: "1995-05-15"
+        ),
+        new OA\Property(
+            property: "city",
+            type: "string",
+            nullable: true,
+            description: "Город проживания",
+            example: "Москва"
+        ),
+        new OA\Property(
+            property: "email_verified_at",
+            type: "string",
+            format: "date-time",
+            nullable: true,
+            description: "Дата подтверждения email",
+            example: "2026-06-19T10:00:00.000000Z"
+        ),
+        new OA\Property(
+            property: "created_at",
+            type: "string",
+            format: "date-time",
+            description: "Дата регистрации",
+            example: "2026-06-19T10:00:00.000000Z",
+            readOnly: true
+        ),
+        new OA\Property(
+            property: "updated_at",
+            type: "string",
+            format: "date-time",
+            description: "Дата последнего обновления",
+            example: "2026-06-19T10:00:00.000000Z",
+            readOnly: true
+        ),
+    ]
+)]
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory;
+    /** @use HasFactory<UserFactory> */
+    use HasFactory, Notifiable, HasApiTokens;
 
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
     protected $fillable = [
-        'name', 'email', 'password', 'avatar', 'bio', 'phone', 'birth_date', 'city',
+        'name',
+        'email',
+        'password',
+        'avatar',
+        'bio',
+        'phone',
+        'birth_date',
+        'city',
     ];
 
-    protected $hidden = ['password', 'remember_token'];
+    /**
+     * The attributes that should be hidden for serialization.
+     *
+     * @var array<int, string>
+     */
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
+
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+
+// 
+// 
+
+// Without casting, you'd have to parse it manually.
+// Carbon::parse($user->email_verified_at)->diffForHumans(); 
+
+// With casting, you can just do this:
+// $user->email_verified_at->diffForHumans(); 
+// $user->email_verified_at->format('d.m.Y'); 
 
     protected function casts(): array
     {
@@ -292,7 +504,6 @@ class User extends Authenticatable
         ];
     }
 
-    // Связи
     public function posts()
     {
         return $this->hasMany(Post::class);
@@ -318,6 +529,8 @@ class User extends Authenticatable
         return $this->belongsToMany(Post::class, 'post_subscriptions')->withTimestamps();
     }
 }
+
+
 -----------------------
 Category.php
 
@@ -1004,15 +1217,15 @@ class PostController extends Controller
         }
 
         // Сортировка
-        $sortBy = $request->get('sort_by', 'published_at');
-        $sortOrder = $request->get('sort_order', 'desc');
+        $sortBy = $request->input('sort_by', 'published_at');
+        $sortOrder = $request->input('sort_order', 'desc');
 
         $allowedSorts = ['published_at', 'created_at', 'likes_count', 'comments_count'];
         if (in_array($sortBy, $allowedSorts)) {
             $query->orderBy($sortBy, $sortOrder);
         }
 
-        $posts = $query->paginate($request->get('per_page', 10));
+        $posts = $query->paginate($request->input('per_page', 10));
 
         return response()->json([
             'success' => true,
@@ -1505,21 +1718,31 @@ class StorePostRequest extends FormRequest
 -----------------------
 <?php
 
-use App\Http\Controllers\Api\CategoryController;
-use App\Http\Controllers\Api\CommentController;
-use App\Http\Controllers\Api\LikeController;
-use App\Http\Controllers\Api\PostController;
-use App\Http\Controllers\Api\ProfileController;
-use App\Http\Controllers\Api\UploadController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AuthController;
+use Illuminate\Support\Facades\File;
+use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\PostController;
+use App\Http\Controllers\LikeController;
+use App\Http\Controllers\CommentController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\UploadController;
+
+Route::get('/test', function () {
+    return response()->json(['message' => 'API работает!']);
+});
 
 // Публичные маршруты
+Route::post('/register', [AuthController::class, 'register']);
+Route::post('/login', [AuthController::class, 'login']);
 Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/categories/{category}', [CategoryController::class, 'show']);
 
-// Защищённые маршруты (требуют авторизации)
+// Защищённые маршруты
 Route::middleware('auth:sanctum')->group(function () {
-    
+    Route::post('/logout', [AuthController::class, 'logout']);
+    Route::get('/me', [AuthController::class, 'me']);
+
     // Посты
     Route::get('/posts', [PostController::class, 'index']);
     Route::get('/posts/{post}', [PostController::class, 'show']);
@@ -1546,6 +1769,24 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/upload/image', [UploadController::class, 'image']);
     Route::delete('/upload', [UploadController::class, 'destroy']);
 });
+
+
+Route::get('/docs-json', function () {
+    $path = storage_path('api-docs/api-docs.json');
+
+    if (!File::exists($path)) {
+        return response()->json([
+            'error' => 'Documentation not found. Run: php artisan l5-swagger:generate'
+        ], 404);
+    }
+
+    return response()->stream(function () use ($path) {
+        echo File::get($path);
+    }, 200, [
+        'Content-Type' => 'application/json',
+    ]);
+});
+
 
 5️⃣ WebSocket события
 
@@ -1931,44 +2172,6 @@ class CategoryFactory extends Factory
     }
 }
 -----------------------
-Натройка bootstrap.php
-
-    <?php
-
-use Illuminate\Foundation\Application;
-use Illuminate\Foundation\Configuration\Exceptions;
-use Illuminate\Foundation\Configuration\Middleware;
-use Illuminate\Http\Request;
-
-
-
-return Application::configure(basePath: dirname(__DIR__))
-    ->withRouting(
-        web: __DIR__.'/../routes/web.php',
-        api: __DIR__.'/../routes/api.php',
-        commands: __DIR__.'/../routes/console.php',
-        channels: __DIR__.'/../routes/channels.php',
-        health: '/up',
-    )
-    ->withMiddleware(function (Middleware $middleware): void {
-        // ✅ Настраиваем CORS
-        $middleware->api(prepend: [
-            \Illuminate\Http\Middleware\HandleCors::class,
-        ]);
-
-        // ✅ Отключаем CSRF для API 
-        $middleware->preventRequestForgery(except: [
-            'api/*',
-        ]);
-
-        // ✅ Sanctum для работы с SPA
-        $middleware->statefulApi();
-    })
-    ->withExceptions(function (Exceptions $exceptions): void {
-        $exceptions->shouldRenderJsonWhen(
-            fn (Request $request) => $request->is('api/*'),
-        );
-    })->create();
 
 
 -----------------------
